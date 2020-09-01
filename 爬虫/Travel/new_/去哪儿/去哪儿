@@ -1,0 +1,47 @@
+def start_urls(*args):
+    """
+
+    :param args: 关键字列表
+    :return: 搜索页面的url
+    """
+    for keyword in args:
+        yield {"url":"https://travel.qunar.com/search/all/%s" % keyword, "meta":{'city':keyword}}
+
+def get_strategy_urls(response):
+    """
+    解析搜索页面的响应，提取攻略页面的url
+    :param response:
+    :return:
+    """
+    tree = etree.HTML(response.text)
+    strategy_url = tree.xpath("//*[contains(text(), '查看全部相关攻略')]/@href")[0]
+    yield strategy_url
+
+def get_detail_url(response):
+    """
+    解析攻略页面的响应，筛选符合条件的详情页的url和部分信息
+    :param response:
+    :return:
+    """
+    ''''
+            爬取的内容需要包括标题、网址链接、游记发表时间、游玩天数、游玩时间、人均花费、和谁、玩法、旅行线路、正文、评论以及图片，标题要刷格式，爬取内容按照顺序的时间进行排列。'''
+    tree = etree.HTML(response.text)
+    strategy_list = tree.xpath("//ul[contains(@class, 'b_strategy_list')]/li")
+    for strategy in strategy_list:
+        date_time = strategy.xpath(".//span[@class='date']")
+        if re.findall("2017|2018", date_time[0]):
+            detail_url = strategy.xpath("./@data-url")[0]
+            headline = "".join(strategy.xpath("./h2/a//text()"))
+
+            days = strategy.xpath(".//span[@class='days']")[0]
+            detail_url = strategy.xpath("./@data-url")[0]
+            date_time = re.findall("\d{4}-\d{1,2}-\d{1,2}", date_time)[0]
+
+            yield detail_url
+
+def parse(response):
+    """
+    解析详情页的数据，返回数据化的数据
+    :param response:
+    :return:
+    """
